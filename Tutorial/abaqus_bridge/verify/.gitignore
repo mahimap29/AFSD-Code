@@ -1,0 +1,8 @@
+# build and run artifacts -- regenerate with ./run_verify.sh
+driver
+*.o
+afsd_params.inp
+toolpath.crs
+probes.txt
+flux_fortran.txt
+fort.*
