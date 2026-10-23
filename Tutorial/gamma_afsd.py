@@ -20,29 +20,29 @@ import pyvista as pv
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 @jit('void(int64[:,:], float64[:],float64[:])',nopython=True)
-def asign_birth_node(elements,element_birth,node_birth):
-    for i in range(0,elements.shape[0]):
-        element = elements[i]
-        birth = element_birth[i]
-        if birth < 0:
+def asign_birth_node(elements,element_birth,node_birth):       
+    for i in range(0,elements.shape[0]):                                # visits every element
+        element = elements[i]                                           # that element's 8 node indices
+        birth = element_birth[i]                                        # time when this element is activated
+        if birth < 0:                                                   # skip elements that are "no borm" or activated
             continue
-        for j in range(0,8):
-            node = element[j]
-            if (node_birth[node] > birth or node_birth[node] < 0):
-                node_birth[node] = birth
+        for j in range(0,8):                                            # Look at each of the the 8 corners of the element
+            node = element[j]                                           # Global node ID at that corner of the element
+            if (node_birth[node] > birth or node_birth[node] < 0):      # Node has no birth yet, or a later birth than this element
+                node_birth[node] = birth                                # set node's birth to this element's birth.
 
 @jit('void(float64[:,:],int64[:,:],float64[:],float64[:],int64[:])',nopython=True)
 def renum_ele_node(nodes,elements,node_birth,element_birth,element_mat):
-    n_id_sort = np.argsort(node_birth)
-    n_id_map = np.zeros_like(n_id_sort)
-    nodes = nodes[n_id_sort]
-    node_birth = node_birth[n_id_sort]
+    n_id_sort = np.argsort(node_birth)                                  # sorting of old nodes with increasing birth order.
+    n_id_map = np.zeros_like(n_id_sort)                                 # reorder coordinates: earliest born node becomes index 0
+    nodes = nodes[n_id_sort]                                            # puts nodes in that order
+    node_birth = node_birth[n_id_sort]                                  # Reorder the birth times the same way (so row i of nodes still matches node_birth[i]).
     for i in range(0,n_id_sort.shape[0]):
-        n_id_map[n_id_sort[i]] = i
-    for i in range(0,elements.shape[0]):
+        n_id_map[n_id_sort[i]] = i                                      # Old node ID → new index after the shuffle
+    for i in range(0,elements.shape[0]):                                # rewrite each element's 8 corners to use the new node numbers.
         for j in range(0,8):
             elements[i,j] = n_id_map[elements[i,j]]
-    e_id_sort = np.argsort(element_birth)
+    e_id_sort = np.argsort(element_birth)                              # same idea for elements
     elements = elements[e_id_sort]
     element_mat = element_mat[e_id_sort]
     element_birth = element_birth[e_id_sort]
